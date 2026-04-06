@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.dev.LMS.dto.CourseDto;
@@ -253,21 +254,30 @@ public class CourseService {
     public int generateOTP(Course course, Set<Student> students, Instructor instructor,  Lesson lesson, int duration) {
         Random random = new Random();
         int otp = random.nextInt(900000) + 100000;
-        LessonOTP lessonOTP = new LessonOTP();
+        LessonOTP lessonOTP = lesson.getLessonOTP();
+        if (lessonOTP == null) {
+            lessonOTP = new LessonOTP();
+            lesson.addLessonOTP(lessonOTP);
+        }
         lessonOTP.setOtpValue(otp);
-        lessonOTP.setExpireAt(LocalDateTime.now().plusDays(duration));
-        lesson.addLessonOTP(lessonOTP);
+        lessonOTP.setExpireAt(LocalDateTime.now().plusMinutes(duration));
+
         for (Student student : students) {
-            emailService.sendOTP(
-                    student.getEmail(),
-                    student.getName(),
-                    lesson.getTitle(),
-                    lesson.getDescription(),
-                    duration,
-                    instructor.getName(),
-                    otp,
-                    course.getName()
+            Notification otpNotification = notificationService.createNotification(
+                    "OTP for lesson '" + lesson.getTitle() + "' in course '" + course.getName() + "' is " + otp
+                            + ". It expires in " + duration + " minute(s)."
             );
+            notificationService.addNotifcationStudent(otpNotification, student);
+            CompletableFuture.runAsync(() -> emailService.sendOTP(
+                student.getEmail(),
+                student.getName(),
+                lesson.getTitle(),
+                lesson.getDescription(),
+                duration,
+                instructor.getName(),
+                otp,
+                course.getName()
+            ));
         }
         courseRepository.save(course);
 

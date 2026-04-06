@@ -10,6 +10,7 @@ public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(length = 2048)
     private String message;
     private LocalDateTime time;
     private boolean isRead;

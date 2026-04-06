@@ -9,6 +9,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -19,12 +20,19 @@ import java.util.List;
 @NoArgsConstructor
 @Service
 public class EmailService {
+    private static final String BRAND_SENDER_NAME = "LMS Afrinode";
+
     @Autowired
     private JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:}")
+    private String configuredMailUsername;
 
 
     public Boolean sendOTP(String studentEmail,String studentName,String lessonTitle ,String description,int duration,String instructorName, int OTP,String courseName) {
+        if (configuredMailUsername == null || configuredMailUsername.isBlank()) {
+            return false;
+        }
         try{
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage,true);
@@ -67,7 +75,7 @@ public class EmailService {
                                 <li><strong>Description:</strong> ${description}</li>
                             </ul>
                             <p>Your One-Time Password (OTP) for attendance is: <strong>${otp}</strong></p>
-                            <p>Please note that this OTP will expire after <strong>${duration}</strong> day from time of sending this email.</p>
+                            <p>Please note that this OTP will expire after <strong>${duration}</strong> minute(s) from time of sending this email.</p>
                             <p>Thank you,<br>
                             ${instructorName}</p>
                             <div class="footer">If you have any questions, please contact us.</div>
@@ -82,20 +90,25 @@ public class EmailService {
                     .replace("${description}", description)
                     .replace("${otp}", String.valueOf(OTP))
                     .replace("${duration}", String.valueOf(duration))
-                    .replace("${instructorName}", instructorName);
+                    .replace("${instructorName}", BRAND_SENDER_NAME);
             helper.setTo(studentEmail);
+            helper.setFrom(configuredMailUsername, BRAND_SENDER_NAME);
             helper.setSubject("OTP For Attending:"+ lessonTitle);
             helper.setText(html, true);
             mailSender.send(mimeMessage);
             return true;
 
         }catch (Exception e){
-            throw new RuntimeException(e.getMessage());
+            System.err.println("OTP email send failed: " + e.getMessage());
+            return false;
         }
 
     }
 
     public Boolean sendEmail(String studentEmail, String studentName, String subject, String content, String instructorName) {
+        if (configuredMailUsername == null || configuredMailUsername.isBlank()) {
+            return false;
+        }
         try{
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage,true);
@@ -146,15 +159,17 @@ public class EmailService {
             html = html.replace("${studentName}", studentName)
                     .replace("${subject}", subject)
                     .replace("${content}", content)
-                    .replace("${instructorName}", instructorName);
+                    .replace("${instructorName}", BRAND_SENDER_NAME);
             helper.setTo(studentEmail);
+            helper.setFrom(configuredMailUsername, BRAND_SENDER_NAME);
             helper.setSubject(subject);
             helper.setText(html, true);
             mailSender.send(mimeMessage);
             return true;
 
         }catch (Exception e){
-            throw new RuntimeException(e.getMessage());
+            System.err.println("Email send failed: " + e.getMessage());
+            return false;
         }
 
     }

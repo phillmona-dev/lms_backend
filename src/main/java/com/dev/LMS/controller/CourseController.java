@@ -1,7 +1,6 @@
 package com.dev.LMS.controller;
 
 import java.net.URLConnection;
-import java.time.LocalDateTime;
 import java.util.*;
 import com.dev.LMS.dto.*;
 import com.dev.LMS.model.*;
@@ -12,6 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "Courses", description = "Endpoints for course creation, enrollment, lessons, resources, OTP attendance, video streaming, and attendance tracking.")
 public class CourseController
 {
+    private static final Logger log = LoggerFactory.getLogger(CourseController.class);
 
     private final CourseService courseService;
     private final UserService userService;
@@ -387,7 +389,15 @@ public class CourseController
             if (course == null) return ResponseEntity.badRequest().body("Course not found");
             Lesson lesson = courseService.getLessonbyId(course, lessonId);
 
-            if (lesson == null || lesson.getLessonOTP() != null && lesson.getLessonOTP().getExpireAt().isBefore(LocalDateTime.now())) return ResponseEntity.badRequest().body("Lesson id not found or OTP generated before and not expired.");
+            if (lesson == null) {
+                return ResponseEntity.badRequest().body("Lesson id not found.");
+            }
+
+            if (duration <= 0) {
+                return ResponseEntity.badRequest().body("Duration must be greater than 0 minutes.");
+            }
+
+            // Allow re-generating OTP at any time; generating a new OTP invalidates the previous one.
 
             if (course.getInstructor().getId() != instructor.getId()) {return ResponseEntity.badRequest().body("You are not authorized to generate OTP for this course.");}
 
@@ -399,7 +409,11 @@ public class CourseController
             return ResponseEntity.ok(otp);
 
         }catch (Exception e){
-            return ResponseEntity.badRequest().body("An error occurred" + e.getMessage());
+            log.error("Failed to generate OTP for course='{}', lessonId={}, duration={}", courseName, lessonId, duration, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "message", "Failed to generate OTP",
+                    "error", e.getMessage() == null ? "Unknown error" : e.getMessage()
+            ));
         }
 
 

@@ -16,15 +16,22 @@ spring:
       max-request-size: 510MB
   mail:
     host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    port: 465
+    username: belay.hadush22@gmail.com
+    password: tmlzhvljaovokmee
+    protocol: smtp
     properties:
       mail:
         smtp:
           auth: true
-          starttls: #encrypted
+          starttls:
+            enable: false
+            required: false
+          ssl:
             enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
   jpa:
     hibernate:
       ddl-auto: update
