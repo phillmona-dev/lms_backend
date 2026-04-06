@@ -49,6 +49,50 @@ public class BureauAnalyticsController {
         }
     }
 
+    @GetMapping("/curriculum/coverage")
+    @Operation(summary = "Curriculum coverage by school",
+            description = "Returns curriculum implementation and core subject coverage metrics per school.")
+    public ResponseEntity<?> getCurriculumCoverage() {
+        try {
+            return ResponseEntity.ok(bureauAnalyticsService.getCurriculumCoverage(currentEmail()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/schools/ranking")
+    @Operation(summary = "School ranking",
+            description = "Returns ranked schools using performance, readiness, and compliance signals.")
+    public ResponseEntity<?> getSchoolRanking() {
+        try {
+            return ResponseEntity.ok(bureauAnalyticsService.getSchoolRanking(currentEmail()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/exams/national")
+    @Operation(summary = "National exam analysis",
+            description = "Returns school-level national exam readiness and aggregate national analysis.")
+    public ResponseEntity<?> getNationalExamAnalysis() {
+        try {
+            return ResponseEntity.ok(bureauAnalyticsService.getNationalExamAnalysis(currentEmail()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/schools/compliance")
+    @Operation(summary = "School compliance",
+            description = "Returns school compliance scores for curriculum, attendance, safety, and reporting.")
+    public ResponseEntity<?> getSchoolCompliance() {
+        try {
+            return ResponseEntity.ok(bureauAnalyticsService.getSchoolCompliance(currentEmail()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     private String currentEmail() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }

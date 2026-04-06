@@ -111,8 +111,8 @@ public class UserController {
                 List<NotificationDto> notifications = notificationService.getStudentNotification(student);
                 return ResponseEntity.ok(notifications);
             }
-            else
-                return ResponseEntity.badRequest().body("User not found");
+            // Return empty list for other roles (Admin, Bureau, etc) to avoid 400 errors in frontend
+            return ResponseEntity.ok(new java.util.ArrayList<>());
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
