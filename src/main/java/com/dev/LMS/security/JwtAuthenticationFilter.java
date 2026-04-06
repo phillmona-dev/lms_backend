@@ -1,0 +1,58 @@
+package com.dev.LMS.security;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import com.dev.LMS.util.JwtUtil;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @SuppressWarnings("null")
+    @Override
+    protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+            jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain filterChain)
+            throws jakarta.servlet.ServletException, IOException {
+
+        String token = request.getHeader("Authorization");
+
+        // Support token as query parameter for media streaming (e.g. <video> tags can't send headers)
+        if ((token == null || !token.startsWith("Bearer ")) && request.getParameter("token") != null) {
+            token = "Bearer " + request.getParameter("token");
+        }
+
+        if (token == null || !token.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (token != null && jwtUtil.checkToken(token)) {
+            String jwt = token.substring(7);
+            String email = jwtUtil.extractEmail(jwt);
+            List<SimpleGrantedAuthority> authorities = jwtUtil.extractAuthorities(jwt).stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .toList();
+
+            // Set authentication context
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(email, null, authorities);
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
